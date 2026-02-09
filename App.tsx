@@ -74,11 +74,27 @@ const AppContent: React.FC = () => {
   if (showSplash || isAuthLoading) {
     return (
       <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-4">
-        <div className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-primary/30 animate-bounce">
-          <Truck className="w-12 h-12 text-white" />
+        {/* 3 Barras Animadas do Splash */}
+        <div className="flex items-end gap-1.5 h-16 mb-8">
+          <style>
+            {`
+              @keyframes splash-bar-bounce {
+                0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+                50% { transform: scaleY(1.2); opacity: 1; }
+              }
+              .animate-splash-bar {
+                animation: splash-bar-bounce 1.5s ease-in-out infinite;
+                transform-origin: bottom;
+              }
+            `}
+          </style>
+          <div className="w-2.5 h-8 bg-primary rounded-full animate-splash-bar shadow-lg shadow-primary/20" style={{ animationDelay: '0s' }}></div>
+          <div className="w-2.5 h-14 bg-primary rounded-full animate-splash-bar shadow-lg shadow-primary/20" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-2.5 h-10 bg-primary rounded-full animate-splash-bar shadow-lg shadow-primary/20" style={{ animationDelay: '0.1s' }}></div>
         </div>
-        <h1 className="text-3xl font-brand font-bold text-gray-900 mb-2 tracking-tight">MIOTO</h1>
-        <p className="text-gray-500 font-medium animate-pulse">Carregando sistema...</p>
+
+        <h1 className="text-4xl font-brand font-bold text-gray-900 mb-2 tracking-tight">MIOTO</h1>
+        <p className="text-gray-400 font-medium text-sm animate-pulse">Carregando experiência...</p>
       </div>
     );
   }
