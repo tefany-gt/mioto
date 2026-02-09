@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI, ChatSession } from "@google/generative-ai";
 import { Send, Bot, User, Loader2, Wrench, AlertTriangle, ChevronLeft, Trash2, X } from 'lucide-react';
@@ -18,7 +18,7 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
         {
             id: '1',
             role: 'model',
-            text: 'Olá! Sou o Mecânico Virtual da MIOTO. (v2.1-debug) 🤖🔧\n\nDescreva o que está acontecendo com seu carro (barulhos, luzes no painel, cheiros) e eu tentarei te ajudar a identificar o problema.'
+            text: 'OlÃ¡! Sou o MecÃ¢nico Virtual da MIOTO. (v2.1-debug) ðŸ¤–ðŸ”§\n\nDescreva o que estÃ¡ acontecendo com seu carro (barulhos, luzes no painel, cheiros) e eu tentarei te ajudar a identificar o problema.'
         }
     ]);
     const [input, setInput] = useState('');
@@ -46,7 +46,7 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                     setMessages(prev => [...prev, {
                         id: 'error-key',
                         role: 'model',
-                        text: '❌ Configuração pendente: A chave de API do Gemini não foi encontrada no arquivo .env. Por favor, adicione VITE_GEMINI_API_KEY para ativar o mecânico.'
+                        text: 'âŒ ConfiguraÃ§Ã£o pendente: A chave de API do Gemini nÃ£o foi encontrada no arquivo .env. Por favor, adicione VITE_GEMINI_API_KEY para ativar o mecÃ¢nico.'
                     }]);
                     return;
                 }
@@ -54,40 +54,40 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({
                     model: 'gemini-1.5-flash',
-                    systemInstruction: `Você é um mecânico automotivo sênior e assistente virtual da plataforma MIOTO. 
+                    systemInstruction: `VocÃª Ã© um mecÃ¢nico automotivo sÃªnior e assistente virtual da plataforma MIOTO. 
                     
                     Seus objetivos:
-                    1. Ajudar motoristas leigos a diagnosticar problemas baseados em sintomas (barulhos, fumaça, luzes, comportamento).
-                    2. Explicar a gravidade do problema (Baixa, Média, Alta/Perigo).
-                    3. Sugerir qual tipo de serviço oficina eles devem procurar (ex: Elétrica, Suspensão, Motor).
-                    4. NUNCA dê orçamentos de preços exatos, pois varia muito.
-                    5. SEMPRE finalize recomendando agendar com uma oficina parceira da MIOTO para um diagnóstico preciso.
+                    1. Ajudar motoristas leigos a diagnosticar problemas baseados em sintomas (barulhos, fumaÃ§a, luzes, comportamento).
+                    2. Explicar a gravidade do problema (Baixa, MÃ©dia, Alta/Perigo).
+                    3. Sugerir qual tipo de serviÃ§o oficina eles devem procurar (ex: ElÃ©trica, SuspensÃ£o, Motor).
+                    4. NUNCA dÃª orÃ§amentos de preÃ§os exatos, pois varia muito.
+                    5. SEMPRE finalize recomendando agendar com uma oficina parceira da MIOTO para um diagnÃ³stico preciso.
                     
-                    Seja cordial, técnico mas acessível, e use emojis relacionados a carros ocasionalmente.`,
+                    Seja cordial, tÃ©cnico mas acessÃ­vel, e use emojis relacionados a carros ocasionalmente.`,
                 });
 
                 chatSession.current = model.startChat({
                     history: [
                         {
                             role: 'user',
-                            parts: [{ text: 'Olá' }]
+                            parts: [{ text: 'OlÃ¡' }]
                         },
                         {
                             role: 'model',
-                            parts: [{ text: 'Olá! Sou o Mecânico Virtual da MIOTO. Como posso ajudar com seu veículo hoje?' }]
+                            parts: [{ text: 'OlÃ¡! Sou o MecÃ¢nico Virtual da MIOTO. Como posso ajudar com seu veÃ­culo hoje?' }]
                         }
                     ],
                     generationConfig: {
                         temperature: 0.7,
                     }
                 });
-                console.log("✅ Mecânico IA inicializado com sucesso.");
+                console.log("âœ… MecÃ¢nico IA inicializado com sucesso.");
             } catch (error) {
                 console.error("Failed to init chat", error);
                 setMessages(prev => [...prev, {
                     id: 'error-init',
                     role: 'model',
-                    text: '⚠️ Erro ao carregar inteligência artificial. Verifique sua chave de API ou conexão.'
+                    text: 'âš ï¸ Erro ao carregar inteligÃªncia artificial. Verifique sua chave de API ou conexÃ£o.'
                 }]);
             }
         };
@@ -108,7 +108,7 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
         try {
             if (!chatSession.current) {
                 // Tenta reinicializar se falhou antes
-                throw new Error("Mecânico IA não inicializado. Verifique as configurações.");
+                throw new Error("MecÃ¢nico IA nÃ£o inicializado. Verifique as configuraÃ§Ãµes.");
             }
 
             // Send to Gemini
@@ -123,13 +123,13 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
         } catch (error: any) {
             console.error("Erro completo do chat:", error);
 
-            // Extrai o erro técnico para ajudar no diagnóstico
+            // Extrai o erro tÃ©cnico para ajudar no diagnÃ³stico
             const technicalError = error.message || JSON.stringify(error);
             const isApiKeyError = technicalError.includes("API key") || technicalError.includes("403") || technicalError.includes("401") || technicalError.includes("key");
 
             const errorMsg = isApiKeyError
-                ? `⚠️ Falha na Chave de API: O Google recusou a conexão.\n\nDetalhe técnico: ${technicalError}`
-                : `⚠️ Falha de Conexão: O Mecânico IA não pôde responder.\n\nErro técnico: ${technicalError}`;
+                ? `âš ï¸ Falha na Chave de API: O Google recusou a conexÃ£o.\n\nDetalhe tÃ©cnico: ${technicalError}`
+                : `âš ï¸ Falha de ConexÃ£o: O MecÃ¢nico IA nÃ£o pÃ´de responder.\n\nErro tÃ©cnico: ${technicalError}`;
 
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
@@ -164,9 +164,9 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900"></span>
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm leading-tight text-white">Mecânico IA</h3>
+                        <h3 className="font-bold text-sm leading-tight text-white">MecÃ¢nico IA</h3>
                         <p className="text-[10px] text-primary flex items-center gap-1 font-bold uppercase tracking-tighter">
-                            Online • Especialista
+                            Online â€¢ Especialista
                         </p>
                     </div>
                 </div>
