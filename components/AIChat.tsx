@@ -126,7 +126,7 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] bg-gray-50 md:rounded-2xl overflow-hidden border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-4">
+        <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] bg-gray-50 md:rounded-2xl overflow-hidden border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-4">
             {/* Header */}
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 flex items-center justify-between text-white shadow-md z-10">
                 <div className="flex items-center gap-3">
