@@ -1,0 +1,7 @@
+{
+  "name": "MIOTO - Oficinas e Serviços",
+  "description": "Aplicativo para encontrar oficinas mecânicas parceiras, solicitar serviços automotivos e assistência emergencial.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

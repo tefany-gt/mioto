@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MIOTO - Oficinas e Serviços Automotivos</title>
+
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="A plataforma definitiva para encontrar oficinas mecânicas, serviços especializados e socorro emergencial. Qualidade e confiança MIOTO." />
+  <meta name="keywords" content="mecânico, oficina, suspensão, freios, troca de óleo, suzano, socorro mecânico" />
+  <meta name="author" content="MIOTO" />
+
+  <!-- PWA & Mobile Optimization -->
+  <meta name="theme-color" content="#FF8B00" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=MIOTO&background=FF8B00&color=fff&size=180" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            brand: ['"Russo One"', 'sans-serif'],
+          },
+          colors: {
+            primary: '#FF8B00',
+            'primary-dark': '#E67E00',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Adicionado Russo One para a Logotipo -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Russo+One&display=swap"
+    rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F8F9FA;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Estilo personalizado solicitado para .outline-none */
+    .outline-none {
+      outline: 2px solid #FF8B00 !important;
+      outline-offset: 2px !important;
+      background: #FFFFFF !important;
+    }
+  </style>
+  <script>
+    // Configuração mínima de fallback
+    window.global = window;
+  </script>
+  <!-- CSS e Scripts do Projeto -->
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
