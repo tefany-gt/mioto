@@ -1,49 +1,59 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
-import { Send, Bot, User, Loader2, Wrench, AlertTriangle, ChevronLeft, Trash2 } from 'lucide-react';
+import { GoogleGenerativeAI, ChatSession } from "@google/generative-ai";
+import { Send, Bot, User, Loader2, Wrench, AlertTriangle, ChevronLeft, Trash2, X } from 'lucide-react';
 
 interface Message {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
+    id: string;
+    role: 'user' | 'model';
+    text: string;
 }
 
 interface AIChatProps {
-  onBack: () => void;
+    onBack: () => void;
 }
 
 const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'model',
-      text: 'Olá! Sou o Mecânico Virtual da MIOTO. 🤖🔧\n\nDescreva o que está acontecendo com seu carro (barulhos, luzes no painel, cheiros) e eu tentarei te ajudar a identificar o problema.'
-    }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Ref to store the chat session instance
-  const chatSession = useRef<Chat | null>(null);
+    const [messages, setMessages] = useState<Message[]>([
+        {
+            id: '1',
+            role: 'model',
+            text: 'Olá! Sou o Mecânico Virtual da MIOTO. (v2.1-debug) 🤖🔧\n\nDescreva o que está acontecendo com seu carro (barulhos, luzes no painel, cheiros) e eu tentarei te ajudar a identificar o problema.'
+        }
+    ]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    // Ref to store the chat session instance
+    const chatSession = useRef<ChatSession | null>(null);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
-  // Initialize Chat Session
-  useEffect(() => {
-    const initChat = async () => {
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            chatSession.current = ai.chats.create({
-                model: 'gemini-3-flash-preview',
-                config: {
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    // Initialize Chat Session
+    useEffect(() => {
+        const initChat = async () => {
+            try {
+                const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+                if (!apiKey) {
+                    console.error("Gemini API Key is missing. Create a .env file with VITE_GEMINI_API_KEY=YOUR_KEY");
+                    setMessages(prev => [...prev, {
+                        id: 'error-key',
+                        role: 'model',
+                        text: '❌ Configuração pendente: A chave de API do Gemini não foi encontrada no arquivo .env. Por favor, adicione VITE_GEMINI_API_KEY para ativar o mecânico.'
+                    }]);
+                    return;
+                }
+
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({
+                    model: 'gemini-1.5-flash',
                     systemInstruction: `Você é um mecânico automotivo sênior e assistente virtual da plataforma MIOTO. 
                     
                     Seus objetivos:
@@ -54,163 +64,178 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                     5. SEMPRE finalize recomendando agendar com uma oficina parceira da MIOTO para um diagnóstico preciso.
                     
                     Seja cordial, técnico mas acessível, e use emojis relacionados a carros ocasionalmente.`,
-                    temperature: 0.7,
-                },
-                history: [
-                    {
-                        role: 'user',
-                        parts: [{ text: 'Olá' }]
-                    },
-                    {
-                        role: 'model',
-                        parts: [{ text: 'Olá! Sou o Mecânico Virtual da MIOTO. Como posso ajudar com seu veículo hoje?' }]
+                });
+
+                chatSession.current = model.startChat({
+                    history: [
+                        {
+                            role: 'user',
+                            parts: [{ text: 'Olá' }]
+                        },
+                        {
+                            role: 'model',
+                            parts: [{ text: 'Olá! Sou o Mecânico Virtual da MIOTO. Como posso ajudar com seu veículo hoje?' }]
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
                     }
-                ]
-            });
-        } catch (error) {
-            console.error("Failed to init chat", error);
+                });
+                console.log("✅ Mecânico IA inicializado com sucesso.");
+            } catch (error) {
+                console.error("Failed to init chat", error);
+                setMessages(prev => [...prev, {
+                    id: 'error-init',
+                    role: 'model',
+                    text: '⚠️ Erro ao carregar inteligência artificial. Verifique sua chave de API ou conexão.'
+                }]);
+            }
+        };
+        initChat();
+    }, []);
+
+    const handleSend = async () => {
+        if (!input.trim() || isLoading) return;
+
+        const userText = input;
+        setInput('');
+        setIsLoading(true);
+
+        // Add User Message
+        const newUserMsg: Message = { id: Date.now().toString(), role: 'user', text: userText };
+        setMessages(prev => [...prev, newUserMsg]);
+
+        try {
+            if (!chatSession.current) {
+                // Tenta reinicializar se falhou antes
+                throw new Error("Mecânico IA não inicializado. Verifique as configurações.");
+            }
+
+            // Send to Gemini
+            const result = await chatSession.current.sendMessage(userText);
+            const response = await result.response;
+            const responseText = response.text();
+
+            // Add Model Message
+            const newModelMsg: Message = { id: (Date.now() + 1).toString(), role: 'model', text: responseText };
+            setMessages(prev => [...prev, newModelMsg]);
+
+        } catch (error: any) {
+            console.error("Erro completo do chat:", error);
+
+            // Extrai o erro técnico para ajudar no diagnóstico
+            const technicalError = error.message || JSON.stringify(error);
+            const isApiKeyError = technicalError.includes("API key") || technicalError.includes("403") || technicalError.includes("401") || technicalError.includes("key");
+
+            const errorMsg = isApiKeyError
+                ? `⚠️ Falha na Chave de API: O Google recusou a conexão.\n\nDetalhe técnico: ${technicalError}`
+                : `⚠️ Falha de Conexão: O Mecânico IA não pôde responder.\n\nErro técnico: ${technicalError}`;
+
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'model',
+                text: errorMsg
+            }]);
+        } finally {
+            setIsLoading(false);
         }
     };
-    initChat();
-  }, []);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
 
-    const userText = input;
-    setInput('');
-    setIsLoading(true);
+    const clearChat = () => {
+        setMessages([messages[0]]);
+        // Refresh to reset session history in SDK easily for this demo
+        window.location.reload();
+    };
 
-    // Add User Message
-    const newUserMsg: Message = { id: Date.now().toString(), role: 'user', text: userText };
-    setMessages(prev => [...prev, newUserMsg]);
-
-    try {
-        if (!chatSession.current) throw new Error("Chat not initialized");
-
-        // Send to Gemini
-        const result: GenerateContentResponse = await chatSession.current.sendMessage({ 
-            message: userText 
-        });
-
-        const responseText = result.text || "Desculpe, não consegui processar sua resposta. Tente novamente.";
-
-        // Add Model Message
-        const newModelMsg: Message = { id: (Date.now() + 1).toString(), role: 'model', text: responseText };
-        setMessages(prev => [...prev, newModelMsg]);
-
-    } catch (error) {
-        console.error(error);
-        setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'model', 
-            text: '⚠️ Ocorreu um erro de conexão com a oficina virtual. Verifique sua internet ou tente mais tarde.' 
-        }]);
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-    }
-  };
-
-  const clearChat = () => {
-      setMessages([messages[0]]);
-      // Re-init chat handled by effect technically, but simple clear is visual here
-      // Ideally we would reset the chatSession history too, but for UI simplicity:
-      window.location.reload(); // Quick reset for demo
-  };
-
-  return (
-    <div className="flex flex-col h-[calc(100vh-140px)] bg-gray-50 md:rounded-2xl overflow-hidden border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 flex items-center justify-between text-white shadow-md z-10">
-        <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-1 hover:bg-white/10 rounded-full md:hidden">
-                <ChevronLeft className="w-6 h-6" />
-            </button>
-            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center border border-primary/50 relative">
-                <Bot className="w-6 h-6 text-primary" />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900"></span>
-            </div>
-            <div>
-                <h3 className="font-bold leading-tight">Mecânico IA</h3>
-                <p className="text-[10px] text-gray-300 flex items-center gap-1">
-                    <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></span>
-                    Online • Gemini 3.0 Flash
-                </p>
-            </div>
-        </div>
-        <button onClick={clearChat} className="p-2 text-gray-400 hover:text-white transition-colors" title="Limpar conversa">
-            <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#e5ddd5]/10">
-        {messages.map((msg) => {
-            const isUser = msg.role === 'user';
-            return (
-                <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`
-                        max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm relative
-                        ${isUser 
-                            ? 'bg-primary text-white rounded-tr-none' 
-                            : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}
-                    `}>
-                        {/* Format line breaks */}
-                        <p className="whitespace-pre-wrap leading-relaxed">
-                            {msg.text}
+    return (
+        <div className="flex flex-col w-[90vw] md:w-[400px] h-[500px] max-h-[80vh] bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-2xl animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="bg-gray-900 border-b border-white/5 p-4 flex items-center justify-between text-white shadow-md z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center border border-primary/50 relative">
+                        <Bot className="w-6 h-6 text-primary" />
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900"></span>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-sm leading-tight text-white">Mecânico IA</h3>
+                        <p className="text-[10px] text-primary flex items-center gap-1 font-bold uppercase tracking-tighter">
+                            Online • Especialista
                         </p>
-                        <span className={`text-[10px] opacity-70 block text-right mt-1 ${isUser ? 'text-orange-100' : 'text-gray-400'}`}>
-                            {new Date(parseInt(msg.id) || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </span>
                     </div>
                 </div>
-            );
-        })}
-        {isLoading && (
-            <div className="flex justify-start">
-                <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-gray-100 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span className="text-xs text-gray-500 font-medium">Analisando motor...</span>
+                <div className="flex items-center gap-1">
+                    <button onClick={clearChat} className="p-2 text-gray-400 hover:text-white transition-colors" title="Limpar conversa">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={onBack} className="p-2 text-gray-400 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      {/* Input Area */}
-      <div className="p-3 bg-white border-t border-gray-200">
-          <div className="flex items-end gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-200 focus-within:border-primary/50 focus-within:bg-white transition-all">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Ex: Meu carro faz um estalo quando viro o volante..."
-                className="flex-1 bg-transparent border-none outline-none text-sm resize-none max-h-32 p-2"
-                rows={1}
-                style={{ minHeight: '40px' }}
-              />
-              <button 
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="p-2.5 bg-primary hover:bg-primary-dark disabled:bg-gray-300 text-white rounded-xl transition-all shadow-sm active:scale-95 flex-shrink-0"
-              >
-                  <Send className="w-5 h-5" />
-              </button>
-          </div>
-          <p className="text-[10px] text-center text-gray-400 mt-2 flex items-center justify-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              IA pode cometer erros. Sempre consulte um mecânico real.
-          </p>
-      </div>
-    </div>
-  );
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+                {messages.map((msg) => {
+                    const isUser = msg.role === 'user';
+                    return (
+                        <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`
+                                max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm
+                                ${isUser
+                                    ? 'bg-primary text-white rounded-tr-none'
+                                    : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}
+                            `}>
+                                <p className="whitespace-pre-wrap leading-relaxed">
+                                    {msg.text}
+                                </p>
+                                <span className={`text-[10px] opacity-70 block text-right mt-1 ${isUser ? 'text-orange-100' : 'text-gray-400'}`}>
+                                    {new Date(parseInt(msg.id) || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
+                {isLoading && (
+                    <div className="flex justify-start">
+                        <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-gray-100 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                            <span className="text-xs text-gray-500 font-medium">Analisando motor...</span>
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 bg-white border-t border-gray-100">
+                <div className="flex items-end gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-200 focus-within:border-primary/50 focus-within:bg-white transition-all">
+                    <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder="Como posso ajudar seu carro?"
+                        className="flex-1 bg-transparent border-none outline-none text-sm resize-none max-h-32 p-2"
+                        rows={1}
+                        style={{ minHeight: '40px' }}
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={!input.trim() || isLoading}
+                        className="p-2.5 bg-primary hover:bg-black disabled:bg-gray-300 text-white rounded-xl transition-all shadow-sm active:scale-95 flex-shrink-0"
+                    >
+                        <Send className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default AIChat;
