@@ -32,32 +32,10 @@ export const downloadLogoSvg = () => {
 };
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({ className = "", textClass = "text-2xl", variant = 'default', showText = true }) => {
-
   const textColor = variant === 'auth' || variant === 'white' || variant === 'header' ? 'text-white' : 'text-primary';
-  const barColor = variant === 'auth' || variant === 'white' || variant === 'header' ? 'bg-white' : 'bg-primary';
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {/* 3 Barras Animadas */}
-      <div className="flex items-end gap-[3px] h-8 mb-1">
-        <style>
-          {`
-            @keyframes bar-bounce {
-              0%, 100% { transform: scaleY(0.5); }
-              50% { transform: scaleY(1.2); }
-            }
-            .animate-bar-bounce {
-              animation: bar-bounce 3s ease-in-out infinite;
-              transform-origin: bottom;
-            }
-          `}
-        </style>
-        <div className={`w-[5px] h-4 rounded-full ${barColor} animate-bar-bounce shadow-sm`} style={{ animationDelay: '0s' }}></div>
-        <div className={`w-[5px] h-7 rounded-full ${barColor} animate-bar-bounce shadow-sm`} style={{ animationDelay: '0.5s' }}></div>
-        <div className={`w-[5px] h-5 rounded-full ${barColor} animate-bar-bounce shadow-sm`} style={{ animationDelay: '0.2s' }}></div>
-      </div>
-
-      {/* Nome MIOTO */}
+    <div className={`flex items-center ${className}`}>
       <span className={`font-brand tracking-wide leading-none ${textClass} ${textColor} drop-shadow-sm`}>MIOTO</span>
     </div>
   );
