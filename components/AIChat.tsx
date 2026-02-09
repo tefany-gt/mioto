@@ -18,7 +18,7 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
         {
             id: '1',
             role: 'model',
-            text: 'Olá! Sou o Mecânico Virtual da MIOTO. 🤖🔧\n\nDescreva o que está acontecendo com seu carro (barulhos, luzes no painel, cheiros) e eu tentarei te ajudar a identificar o problema.'
+            text: 'Olá! Sou o Mecânico Virtual da MIOTO. (v2.1-debug) 🤖🔧\n\nDescreva o que está acontecendo com seu carro (barulhos, luzes no painel, cheiros) e eu tentarei te ajudar a identificar o problema.'
         }
     ]);
     const [input, setInput] = useState('');
