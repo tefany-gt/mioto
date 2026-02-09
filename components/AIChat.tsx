@@ -42,7 +42,12 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
             try {
                 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
                 if (!apiKey) {
-                    console.error("Gemini API Key is missing");
+                    console.error("Gemini API Key is missing. Create a .env file with VITE_GEMINI_API_KEY=YOUR_KEY");
+                    setMessages(prev => [...prev, {
+                        id: 'error-key',
+                        role: 'model',
+                        text: '❌ Configuração pendente: A chave de API do Gemini não foi encontrada no arquivo .env. Por favor, adicione VITE_GEMINI_API_KEY para ativar o mecânico.'
+                    }]);
                     return;
                 }
 
@@ -76,8 +81,14 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                         temperature: 0.7,
                     }
                 });
+                console.log("✅ Mecânico IA inicializado com sucesso.");
             } catch (error) {
                 console.error("Failed to init chat", error);
+                setMessages(prev => [...prev, {
+                    id: 'error-init',
+                    role: 'model',
+                    text: '⚠️ Erro ao carregar inteligência artificial. Verifique sua chave de API ou conexão.'
+                }]);
             }
         };
         initChat();
@@ -95,7 +106,10 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
         setMessages(prev => [...prev, newUserMsg]);
 
         try {
-            if (!chatSession.current) throw new Error("Chat not initialized");
+            if (!chatSession.current) {
+                // Tenta reinicializar se falhou antes
+                throw new Error("Mecânico IA não inicializado. Verifique as configurações.");
+            }
 
             // Send to Gemini
             const result = await chatSession.current.sendMessage(userText);
@@ -106,12 +120,16 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
             const newModelMsg: Message = { id: (Date.now() + 1).toString(), role: 'model', text: responseText };
             setMessages(prev => [...prev, newModelMsg]);
 
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error("Erro no chat:", error);
+            const errorMsg = error.message?.includes("API key")
+                ? '⚠️ Chave de API inválida ou expirada. Verifique seu arquivo .env.'
+                : '⚠️ Falha na rede ou servidor. Tente novamente em alguns instantes.';
+
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 role: 'model',
-                text: '⚠️ Ocorreu um erro de conexão com a oficina virtual. Verifique sua internet ou tente mais tarde.'
+                text: errorMsg
             }]);
         } finally {
             setIsLoading(false);
