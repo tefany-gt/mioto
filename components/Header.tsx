@@ -158,11 +158,11 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
           {/* LADO ESQUERDO: Menu Mobile + Logo */}
           <div className="flex items-center gap-0">
             <div className="md:hidden">
-              <button onClick={toggleMenu} className="p-2 -ml-2 mr-1 rounded-full text-white hover:bg-white/20 transition-colors">
+              <button onClick={toggleMenu} className="p-2 -ml-2 mr-1 rounded-full text-white hover:bg-white/20 transition-colors group">
                 <svg viewBox="0 0 30 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="h-9 w-auto">
-                  <rect x="0" y="12" width="6" height="12" rx="2" />
-                  <rect x="10" y="0" width="6" height="24" rx="2" />
-                  <rect x="20" y="8" width="6" height="16" rx="2" />
+                  <rect x="0" y="12" width="6" height="12" rx="2" className="transition-all duration-300 group-hover:translate-y-1" />
+                  <rect x="10" y="0" width="6" height="24" rx="2" className="transition-all duration-300 group-hover:translate-y-2" />
+                  <rect x="20" y="8" width="6" height="16" rx="2" className="transition-all duration-300 group-hover:translate-y-1.5" />
                 </svg>
               </button>
             </div>
