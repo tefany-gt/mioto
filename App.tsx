@@ -137,9 +137,7 @@ const AppContent: React.FC = () => {
               onNavigate={handleTabChange}
               onOpenDetails={handleOpenWorkshopDetails}
             />
-            {/* COMPONENTE COM BUG CRITICO - DESATIVADO PARA RESTAURAR O APP
-            <PartnerBanner onClick={() => handleOpenAuth()} />
-            */}
+            <PartnerBanner onClick={() => handleOpenAuth('register', 'oficina')} />
           </div>
         );
     }
