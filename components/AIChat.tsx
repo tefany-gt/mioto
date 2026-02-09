@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI, ChatSession } from "@google/generative-ai";
 import { Send, Bot, User, Loader2, Wrench, AlertTriangle, ChevronLeft, Trash2 } from 'lucide-react';
 
 interface Message {
@@ -26,7 +26,7 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Ref to store the chat session instance
-    const chatSession = useRef<Chat | null>(null);
+    const chatSession = useRef<ChatSession | null>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,11 +40,16 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
     useEffect(() => {
         const initChat = async () => {
             try {
-                const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-                chatSession.current = ai.chats.create({
-                    model: 'gemini-3-flash-preview',
-                    config: {
-                        systemInstruction: `Você é um mecânico automotivo sênior e assistente virtual da plataforma MIOTO. 
+                const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+                if (!apiKey) {
+                    console.error("Gemini API Key is missing");
+                    return;
+                }
+
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({
+                    model: 'gemini-1.5-flash',
+                    systemInstruction: `Você é um mecânico automotivo sênior e assistente virtual da plataforma MIOTO. 
                     
                     Seus objetivos:
                     1. Ajudar motoristas leigos a diagnosticar problemas baseados em sintomas (barulhos, fumaça, luzes, comportamento).
@@ -54,8 +59,9 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                     5. SEMPRE finalize recomendando agendar com uma oficina parceira da MIOTO para um diagnóstico preciso.
                     
                     Seja cordial, técnico mas acessível, e use emojis relacionados a carros ocasionalmente.`,
-                        temperature: 0.7,
-                    },
+                });
+
+                chatSession.current = model.startChat({
                     history: [
                         {
                             role: 'user',
@@ -65,7 +71,10 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                             role: 'model',
                             parts: [{ text: 'Olá! Sou o Mecânico Virtual da MIOTO. Como posso ajudar com seu veículo hoje?' }]
                         }
-                    ]
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                    }
                 });
             } catch (error) {
                 console.error("Failed to init chat", error);
@@ -89,11 +98,9 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
             if (!chatSession.current) throw new Error("Chat not initialized");
 
             // Send to Gemini
-            const result: GenerateContentResponse = await chatSession.current.sendMessage({
-                message: userText
-            });
-
-            const responseText = result.text || "Desculpe, não consegui processar sua resposta. Tente novamente.";
+            const result = await chatSession.current.sendMessage(userText);
+            const response = await result.response;
+            const responseText = response.text();
 
             // Add Model Message
             const newModelMsg: Message = { id: (Date.now() + 1).toString(), role: 'model', text: responseText };
