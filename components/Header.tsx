@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, X, Wrench, Search, LogOut, LogIn, ShoppingBag, Zap, Database, Globe, WifiOff, Heart, ChevronRight, Star } from 'lucide-react';
-import { User as UserType, Notification, Workshop } from '../types';
+import { User, UserType, Notification, Workshop } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/db';
 import { BrandLogo } from './BrandLogo';
 
 interface HeaderProps {
-  user: UserType | null;
-  onOpenAuth: (view?: 'login' | 'register') => void;
+  user: User | null;
+  onOpenAuth: (view?: 'login' | 'register', type?: UserType) => void;
   onNavigate: (tabId: string, filter?: string) => void;
   dbStatus: 'checking' | 'online' | 'offline';
   onRecheck?: () => Promise<{ status: 'online' | 'offline', message?: string }>;
@@ -193,6 +193,12 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
                 <>
                   <button onClick={() => handleNavClick('workshops', 'Mecânica')} className="text-sm font-medium text-white/90 hover:text-white transition-colors">Oficinas</button>
                   <button onClick={() => handleNavClick('workshops', 'Auto Peças')} className="text-sm font-medium text-white/90 hover:text-white transition-colors">Auto Peças</button>
+                  <button
+                    onClick={() => onOpenAuth('register', 'oficina')}
+                    className="ml-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg border border-white/20 transition-all"
+                  >
+                    Seja uma Oficina
+                  </button>
                 </>
               ) : (
                 <>
@@ -373,6 +379,12 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
                   </button>
                   <button onClick={() => handleNavClick('workshops', 'Auto Peças')} className="w-full flex items-center gap-3 p-3 text-gray-700 hover:bg-orange-50 hover:text-primary rounded-xl font-bold text-sm text-left">
                     <ShoppingBag className="w-5 h-5" /> Auto Peças
+                  </button>
+                  <button
+                    onClick={() => { onOpenAuth('register', 'oficina'); setIsMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 p-3 mt-2 bg-gray-900 text-white hover:bg-black rounded-xl font-bold text-sm text-left"
+                  >
+                    <Wrench className="w-5 h-5 text-primary" /> Seja uma Oficina
                   </button>
                 </div>
               )}

@@ -19,6 +19,7 @@ const AppContent: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
+  const [authConfig, setAuthConfig] = useState<{ view: 'login' | 'register', type: UserType }>({ view: 'login', type: 'motorista' });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [dbStatus, setDbStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [showSplash, setShowSplash] = useState(true);
@@ -49,7 +50,10 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [checkDbConnection]);
 
-  const handleOpenAuth = useCallback(() => setShowAuthModal(true), []);
+  const handleOpenAuth = useCallback((view: 'login' | 'register' = 'login', type: UserType = 'motorista') => {
+    setAuthConfig({ view, type });
+    setShowAuthModal(true);
+  }, []);
   const handleTabChange = useCallback((tabId: string) => setActiveTab(tabId), []);
 
   const handleOpenWorkshopDetails = useCallback((workshop: Workshop) => {
@@ -157,7 +161,13 @@ const AppContent: React.FC = () => {
       )}
 
       {/* AUTH MODAL */}
-      {showAuthModal && !user && <AuthScreen onClose={() => setShowAuthModal(false)} initialView="login" initialType="motorista" />}
+      {showAuthModal && !user && (
+        <AuthScreen
+          onClose={() => setShowAuthModal(false)}
+          initialView={authConfig.view}
+          initialType={authConfig.type}
+        />
+      )}
 
       {/* SOS MODAL SIMPLIFICADO */}
       {showSOSModal && (
