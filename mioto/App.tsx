@@ -26,12 +26,12 @@ const AppContent: React.FC = () => {
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [sosStep, setSosStep] = useState<'menu' | 'searching'>('menu');
   // Callbacks simplificados para teste
-  const checkDbConnection = useCallback(async (): Promise<{ status: 'online' | 'offline', message?: string }> => {
+  const checkDbConnection = useCallback(async () => {
     setDbStatus('checking');
     try {
       const result = await db.checkConnection();
       setDbStatus(result.status);
-      return result;
+      return result; // Fixes lint error: Header expects a return value
     } catch (e) {
       console.error(e);
       return { status: 'offline', message: 'Erro ao verificar' };

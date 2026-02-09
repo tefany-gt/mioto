@@ -1,0 +1,11 @@
+# Integração com Netlify cancelada.
+# Este arquivo pode ser excluído se não for mais utilizar a plataforma.
+
+# [build]
+#   command = "npm run build"
+#   publish = "dist"
+
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
