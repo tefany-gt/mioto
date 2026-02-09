@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI, ChatSession } from "@google/generative-ai";
-import { Send, Bot, User, Loader2, Wrench, AlertTriangle, ChevronLeft, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Wrench, AlertTriangle, ChevronLeft, Trash2, X } from 'lucide-react';
 
 interface Message {
     id: string;
@@ -127,49 +127,48 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
 
     const clearChat = () => {
         setMessages([messages[0]]);
-        // Re-init chat handled by effect technically, but simple clear is visual here
-        // Ideally we would reset the chatSession history too, but for UI simplicity:
-        window.location.reload(); // Quick reset for demo
+        // Refresh to reset session history in SDK easily for this demo
+        window.location.reload();
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] bg-gray-50 md:rounded-2xl overflow-hidden border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-4">
+        <div className="flex flex-col w-[90vw] md:w-[400px] h-[500px] max-h-[80vh] bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-2xl animate-in zoom-in-95 duration-300">
             {/* Header */}
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 flex items-center justify-between text-white shadow-md z-10">
+            <div className="bg-gray-900 border-b border-white/5 p-4 flex items-center justify-between text-white shadow-md z-10">
                 <div className="flex items-center gap-3">
-                    <button onClick={onBack} className="p-1 hover:bg-white/10 rounded-full md:hidden">
-                        <ChevronLeft className="w-6 h-6" />
-                    </button>
                     <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center border border-primary/50 relative">
                         <Bot className="w-6 h-6 text-primary" />
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900"></span>
                     </div>
                     <div>
-                        <h3 className="font-bold leading-tight">Mecânico IA</h3>
-                        <p className="text-[10px] text-gray-300 flex items-center gap-1">
-                            <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></span>
-                            Online • Gemini 3.0 Flash
+                        <h3 className="font-bold text-sm leading-tight text-white">Mecânico IA</h3>
+                        <p className="text-[10px] text-primary flex items-center gap-1 font-bold uppercase tracking-tighter">
+                            Online • Especialista
                         </p>
                     </div>
                 </div>
-                <button onClick={clearChat} className="p-2 text-gray-400 hover:text-white transition-colors" title="Limpar conversa">
-                    <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                    <button onClick={clearChat} className="p-2 text-gray-400 hover:text-white transition-colors" title="Limpar conversa">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={onBack} className="p-2 text-gray-400 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#e5ddd5]/10">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
                 {messages.map((msg) => {
                     const isUser = msg.role === 'user';
                     return (
                         <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                             <div className={`
-                        max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm relative
-                        ${isUser
+                                max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm
+                                ${isUser
                                     ? 'bg-primary text-white rounded-tr-none'
                                     : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}
-                    `}>
-                                {/* Format line breaks */}
+                            `}>
                                 <p className="whitespace-pre-wrap leading-relaxed">
                                     {msg.text}
                                 </p>
@@ -192,13 +191,13 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
             </div>
 
             {/* Input Area */}
-            <div className="p-3 bg-white border-t border-gray-200">
+            <div className="p-4 bg-white border-t border-gray-100">
                 <div className="flex items-end gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-200 focus-within:border-primary/50 focus-within:bg-white transition-all">
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        placeholder="Ex: Meu carro faz um estalo quando viro o volante..."
+                        placeholder="Como posso ajudar seu carro?"
                         className="flex-1 bg-transparent border-none outline-none text-sm resize-none max-h-32 p-2"
                         rows={1}
                         style={{ minHeight: '40px' }}
@@ -206,15 +205,11 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isLoading}
-                        className="p-2.5 bg-primary hover:bg-primary-dark disabled:bg-gray-300 text-white rounded-xl transition-all shadow-sm active:scale-95 flex-shrink-0"
+                        className="p-2.5 bg-primary hover:bg-black disabled:bg-gray-300 text-white rounded-xl transition-all shadow-sm active:scale-95 flex-shrink-0"
                     >
                         <Send className="w-5 h-5" />
                     </button>
                 </div>
-                <p className="text-[10px] text-center text-gray-400 mt-2 flex items-center justify-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    IA pode cometer erros. Sempre consulte um mecânico real.
-                </p>
             </div>
         </div>
     );

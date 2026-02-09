@@ -23,6 +23,7 @@ const AppContent: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [dbStatus, setDbStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [showSplash, setShowSplash] = useState(true);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [selectedWorkshopDetail, setSelectedWorkshopDetail] = useState<Workshop | null>(null);
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [sosStep, setSosStep] = useState<'menu' | 'searching'>('menu');
@@ -115,7 +116,6 @@ const AppContent: React.FC = () => {
     }
 
     switch (activeTab) {
-      case 'ai-chat': return <AIChat onBack={() => setActiveTab('home')} />;
       case 'orders': return <Orders />;
       case 'profile': return <Profile />;
       case 'home':
@@ -127,7 +127,7 @@ const AppContent: React.FC = () => {
               <button onClick={() => setShowSOSModal(true)} className="col-span-3 bg-red-600 text-white rounded-xl p-4 flex items-center justify-center gap-2 shadow-lg shadow-red-200">
                 <Siren className="w-6 h-6" /> <span className="font-bold">SOS 24h</span>
               </button>
-              <button onClick={() => setActiveTab('ai-chat')} className="col-span-2 bg-gray-900 text-white rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
+              <button onClick={() => setIsAIChatOpen(true)} className="col-span-2 bg-gray-900 text-white rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
                 <Bot className="w-5 h-5 mb-1 text-primary" /> <span className="text-xs">Mecânico IA</span>
               </button>
             </div>
@@ -154,6 +154,7 @@ const AppContent: React.FC = () => {
           onNavigate={handleTabChange}
           dbStatus={dbStatus}
           onRecheck={checkDbConnection}
+          onOpenAIChat={() => setIsAIChatOpen(true)}
           onOpenDetails={handleOpenWorkshopDetails}
         />
       )}
@@ -180,6 +181,25 @@ const AppContent: React.FC = () => {
       <main className="max-w-7xl mx-auto pt-20 px-4">
         {renderContent()}
       </main>
+
+      {/* FLOATING AI CHAT WIDGET */}
+      <div className="fixed bottom-20 md:bottom-6 left-4 z-[60] flex flex-col items-start gap-4 pointer-events-none">
+        {isAIChatOpen && (
+          <div className="pointer-events-auto animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <AIChat onBack={() => setIsAIChatOpen(false)} />
+          </div>
+        )}
+
+        {!isAIChatOpen && (
+          <button
+            onClick={() => setIsAIChatOpen(true)}
+            className="pointer-events-auto w-14 h-14 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-2xl border-2 border-primary/50 group transition-all hover:scale-110 active:scale-95 relative"
+          >
+            <Bot className="w-7 h-7 text-primary group-hover:rotate-12 transition-transform" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-gray-900"></div>
+          </button>
+        )}
+      </div>
 
       {/* BOTTOM NAV */}
       {!selectedWorkshopDetail && (

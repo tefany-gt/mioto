@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, X, Wrench, Search, LogOut, LogIn, ShoppingBag, Zap, Database, Globe, WifiOff, Heart, ChevronRight, Star } from 'lucide-react';
+import { Menu, Bell, X, Wrench, Search, LogOut, LogIn, ShoppingBag, Zap, Database, Globe, WifiOff, Heart, ChevronRight, Star, Bot } from 'lucide-react';
 import { User, UserType, Notification, Workshop } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/db';
@@ -11,10 +11,11 @@ interface HeaderProps {
   onNavigate: (tabId: string, filter?: string) => void;
   dbStatus: 'checking' | 'online' | 'offline';
   onRecheck?: () => Promise<{ status: 'online' | 'offline', message?: string }>;
+  onOpenAIChat: () => void;
   onOpenDetails?: (workshop: Workshop) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus, onRecheck, onOpenDetails }) => {
+const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus, onRecheck, onOpenAIChat, onOpenDetails }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isFavOpen, setIsFavOpen] = useState(false);
@@ -204,6 +205,9 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
                 <>
                   <button onClick={() => handleNavClick('orders')} className="text-sm font-medium text-white/90 hover:text-white transition-colors">Meus Pedidos</button>
                   <button onClick={() => handleNavClick('workshops')} className="text-sm font-medium text-white/90 hover:text-white transition-colors">Parceiros</button>
+                  <button onClick={onOpenAIChat} className="flex items-center gap-1.5 text-sm font-bold text-primary hover:text-white transition-all bg-white/5 hover:bg-primary px-3 py-1.5 rounded-lg border border-primary/20 hover:border-primary">
+                    <Bot className="w-4 h-4" /> Mecânico IA
+                  </button>
                 </>
               )}
             </nav>
@@ -390,6 +394,9 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
               )}
 
               <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 px-2">Institucional</p>
+              <button onClick={() => { onOpenAIChat(); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 p-3 text-primary bg-orange-50 rounded-xl font-bold text-sm text-left">
+                <Bot className="w-5 h-5" /> Mecânico IA
+              </button>
               <button onClick={() => handleNavClick('home')} className="w-full flex items-center gap-3 p-3 text-gray-700 hover:bg-orange-50 rounded-xl font-medium text-sm text-left">
                 <Search className="w-5 h-5" /> Início / Busca
               </button>
