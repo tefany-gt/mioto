@@ -121,10 +121,15 @@ const AIChat: React.FC<AIChatProps> = ({ onBack }) => {
             setMessages(prev => [...prev, newModelMsg]);
 
         } catch (error: any) {
-            console.error("Erro no chat:", error);
-            const errorMsg = error.message?.includes("API key")
-                ? '⚠️ Chave de API inválida ou expirada. Verifique seu arquivo .env.'
-                : '⚠️ Falha na rede ou servidor. Tente novamente em alguns instantes.';
+            console.error("Erro completo do chat:", error);
+
+            // Extrai o erro técnico para ajudar no diagnóstico
+            const technicalError = error.message || JSON.stringify(error);
+            const isApiKeyError = technicalError.includes("API key") || technicalError.includes("403") || technicalError.includes("401") || technicalError.includes("key");
+
+            const errorMsg = isApiKeyError
+                ? `⚠️ Falha na Chave de API: O Google recusou a conexão.\n\nDetalhe técnico: ${technicalError}`
+                : `⚠️ Falha de Conexão: O Mecânico IA não pôde responder.\n\nErro técnico: ${technicalError}`;
 
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
