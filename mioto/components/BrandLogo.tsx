@@ -4,7 +4,7 @@ import React from 'react';
 interface BrandLogoProps {
   className?: string;
   textClass?: string;
-  variant?: 'default' | 'auth' | 'white' | 'header'; 
+  variant?: 'default' | 'auth' | 'white' | 'header';
   // default: primary text
   // auth: white text
   // white: white text
@@ -31,13 +31,19 @@ export const downloadLogoSvg = () => {
   document.body.removeChild(link);
 };
 
-export const BrandLogo: React.FC<BrandLogoProps> = ({ className = "", textClass="text-2xl", variant = 'default', showText = true }) => {
-  
+export const BrandLogo: React.FC<BrandLogoProps> = ({ className = "", textClass = "text-2xl", variant = 'default', showText = true }) => {
   const textColor = variant === 'auth' || variant === 'white' || variant === 'header' ? 'text-white' : 'text-primary';
+  const barBg = variant === 'auth' || variant === 'white' || variant === 'header' ? 'bg-white' : 'bg-primary';
 
   return (
     <div className={`flex items-center ${className}`}>
-      {/* Aplicando a fonte Russo One (font-brand) e um tracking (espaçamento) levemente maior para elegância */}
+      {/* 3 Barras da Identidade Visual (Apenas Desktop) */}
+      <div className="hidden md:flex items-end gap-1 h-8 mr-2.5">
+        <div className={`w-1 h-3 ${barBg} rounded-full opacity-60`}></div>
+        <div className={`w-1 h-6 ${barBg} rounded-full`}></div>
+        <div className={`w-1 h-4 ${barBg} rounded-full opacity-80`}></div>
+      </div>
+
       <span className={`font-brand tracking-wide leading-none ${textClass} ${textColor} drop-shadow-sm`}>MIOTO</span>
     </div>
   );
