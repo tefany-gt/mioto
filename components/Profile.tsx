@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, User as UserIcon, MapPin, Car, Mail, ShieldCheck, Phone, FileText, Camera, Fingerprint, Star, Briefcase, Edit2, Save, X, Trash2, PlusCircle, Download, Monitor, Clock, CalendarDays, Power, Check, ChevronRight, Heart } from 'lucide-react';
-import { db } from '../services/db';
+import { LogOut, User as UserIcon, MapPin, Car, Mail, ShieldCheck, Phone, FileText, Camera, Fingerprint, Star, Briefcase, Edit2, Save, X, Trash2, PlusCircle, Download, Monitor, Clock, CalendarDays, Power, Check, ChevronRight, Heart, Droplet, Disc, Battery, Zap, Wrench } from 'lucide-react';
+import { db, generateUUID } from '../services/db';
 import WorkshopServices from './WorkshopServices';
 import { downloadLogoSvg } from './BrandLogo';
-import { OpeningHours, DaySchedule } from '../types';
+import { OpeningHours, DaySchedule, Workshop, ServiceOrder, PaymentMethod } from '../types';
+import ServiceRequestModal from './ServiceRequestModal';
+import { useNavigate } from 'react-router-dom';
 
 const normalizePhone = (value: string) => {
     if (!value) return "";
@@ -57,12 +59,25 @@ const Profile: React.FC = () => {
     const { user, logout, updateProfile, toggleFavorite } = useAuth();
 
     const [favoriteWorkshops, setFavoriteWorkshops] = useState<any[]>([]);
+    const [showRequestModal, setShowRequestModal] = useState(false);
+    const [requesting, setRequesting] = useState(false);
 
     // Modal States
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isEditingVehicle, setIsEditingVehicle] = useState(false);
     const [isEditingHours, setIsEditingHours] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Helper for Service Icons (Same as WorkshopList)
+    const getServiceIcon = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('óleo') || n.includes('lubrificante') || n.includes('filtro')) return Droplet;
+        if (n.includes('freio') || n.includes('pastilha') || n.includes('disco')) return Disc;
+        if (n.includes('bateria')) return Battery;
+        if (n.includes('elétrica') || n.includes('lâmpada') || n.includes('som')) return Zap;
+        if (n.includes('mecanica') || n.includes('mecânica')) return Wrench;
+        return Wrench;
+    };
 
     // Force re-render for clock
     const [, setTick] = useState(0);
@@ -206,6 +221,45 @@ const Profile: React.FC = () => {
         }
     };
 
+    const handleFinalizeRequest = async (
+        serviceName: string,
+        price: number | undefined,
+        description: string | undefined,
+        paymentMethod: PaymentMethod,
+        scheduleData?: { date: string, time: string }
+    ) => {
+        if (!user || user.type !== 'oficina') return;
+        setRequesting(true);
+
+        const newOrder: ServiceOrder = {
+            id: generateUUID(),
+            driverId: user.id, // Current user is the owner, but we use the same structure
+            driverName: user.name,
+            driverPhone: user.phone,
+            workshopId: user.id,
+            workshopName: user.name,
+            workshopPhone: user.phone,
+            serviceName: serviceName,
+            serviceDescription: description,
+            price: price,
+            paymentMethod: paymentMethod,
+            date: new Date().toLocaleDateString('pt-BR'),
+            status: paymentMethod === 'credit_card' ? 'pago' : 'criado',
+            vehicle: 'Uso Administrativo',
+            vehiclePlate: '—',
+            scheduleDate: scheduleData?.date,
+            scheduleTime: scheduleData?.time,
+            scheduleStatus: scheduleData ? 'pendente' : 'imediato'
+        };
+
+        if (db.createOrder) {
+            await db.createOrder(newOrder);
+        }
+        setRequesting(false);
+        setShowRequestModal(false);
+        alert("Solicitação registrada com sucesso!");
+    };
+
     const handleSaveVehicle = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -259,9 +313,16 @@ const Profile: React.FC = () => {
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative group">
                 <div className="relative h-32 md:h-48 w-full bg-gray-200">
                     <img src={user.coverImage || defaultCover} alt="Capa" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
-                    <label className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full cursor-pointer backdrop-blur-md transition-colors border border-white/20">
+                    {user.type === 'oficina' && (
+                        <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-md shadow-sm flex items-center gap-1.5 border border-white/20 z-20 ${isOpenRealTime ? 'bg-green-500 text-white' : 'bg-gray-900/90 text-gray-300'}`}>
+                            {isOpenRealTime ? <Clock className="w-3.5 h-3.5 animate-pulse" /> : <div className="w-2 h-2 rounded-full bg-red-500" />}
+                            {isOpenRealTime ? 'Aberto Agora' : 'Fechado'}
+                        </div>
+                    )}
+
+                    <label className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full cursor-pointer backdrop-blur-md transition-colors border border-white/20 z-20">
                         <Camera className="w-4 h-4" />
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverImage')} />
                     </label>
@@ -294,14 +355,38 @@ const Profile: React.FC = () => {
                                         </span>
                                     )}
                                 </div>
-                                {user.description && <p className="text-gray-500 text-sm mt-3 max-w-lg italic">"{user.description}"</p>}
+                                {user.description && <p className="text-gray-300 text-xs md:text-sm mt-2 max-w-lg font-medium drop-shadow-sm line-clamp-2 md:line-clamp-none">"{user.description}"</p>}
+
+                                {user.type === 'oficina' && user.services && user.services.length > 0 && (
+                                    <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+                                        {user.services.map((service: any) => {
+                                            const Icon = getServiceIcon(service.name);
+                                            return (
+                                                <div key={service.id} className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 min-w-[70px] flex-shrink-0 group-hover:bg-white/20 transition-all">
+                                                    <Icon className="w-5 h-5 text-primary mb-1" />
+                                                    <span className="text-[10px] font-bold text-white uppercase tracking-tight">{service.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
-                            <button
-                                onClick={handleOpenEditProfile}
-                                className="mt-4 md:mt-0 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 flex items-center gap-2 hover:bg-gray-50 hover:border-primary hover:text-primary transition-all"
-                            >
-                                <Edit2 className="w-4 h-4" /> Editar Perfil
-                            </button>
+                            <div className="flex flex-col gap-2 mt-4 md:mt-16">
+                                {user.type === 'oficina' && (
+                                    <button
+                                        onClick={() => setShowRequestModal(true)}
+                                        className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all active:scale-95"
+                                    >
+                                        <Wrench className="w-4 h-4" /> Solicitar Serviço
+                                    </button>
+                                )}
+                                <button
+                                    onClick={handleOpenEditProfile}
+                                    className="px-4 py-2 border border-white/20 bg-white/5 backdrop-blur-md rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                                >
+                                    <Edit2 className="w-4 h-4" /> Editar Perfil
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -722,6 +807,15 @@ const Profile: React.FC = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {showRequestModal && user.type === 'oficina' && (
+                <ServiceRequestModal
+                    workshop={user as any}
+                    onClose={() => setShowRequestModal(false)}
+                    onSelectService={handleFinalizeRequest}
+                    isLoading={requesting}
+                />
             )}
         </div>
     );
