@@ -33,15 +33,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (profile) {
               setUser(profile);
             } else {
-               console.warn("Sessão ativa, mas perfil não encontrado no banco.");
+              console.warn("Sessão ativa, mas perfil não encontrado no banco.");
             }
           }
         }
-        
+
         // Se não logou pelo Supabase, tenta Fallback local
         if (!user) {
-            const local = localStorage.getItem('iotu_session');
-            if (local) setUser(JSON.parse(local));
+          const local = localStorage.getItem('iotu_session');
+          if (local) setUser(JSON.parse(local));
         }
       } catch (e) {
         console.error("Auth Init Error:", e);
@@ -56,11 +56,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session?.user) {
         // Delay pequeno para garantir que o Trigger do banco tenha rodado
         setTimeout(async () => {
-            const profile = await db.getUserById(session.user.id);
-            if (profile) {
-              setUser(profile);
-              localStorage.setItem('iotu_session', JSON.stringify(profile));
-            }
+          const profile = await db.getUserById(session.user.id);
+          if (profile) {
+            setUser(profile);
+            localStorage.setItem('iotu_session', JSON.stringify(profile));
+          }
         }, 1000);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, pass: string) => {
     let success = false;
-    
+
     // 1. Tenta Login no Supabase
     if (supabase) {
       try {
@@ -83,8 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Força busca imediata
           const profile = await db.getUserById(data.user.id);
           if (profile) {
-              setUser(profile);
-              localStorage.setItem('iotu_session', JSON.stringify(profile));
+            setUser(profile);
+            localStorage.setItem('iotu_session', JSON.stringify(profile));
           }
         }
       } catch (e) {
@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 2. Fallback Local (apenas para contas de teste)
     if (!success) {
       if (email.includes('teste.com') || email.includes('iotu.com')) {
-          await db.seedDatabase();
+        await db.seedDatabase();
       }
       const localUser = await db.findUserByEmail(email);
       if (localUser) {
@@ -112,8 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (supabase) {
       try {
         // Envia dados completos nos metadados para o Trigger SQL usar
-        const { data, error } = await supabase.auth.signUp({ 
-          email: newUser.email, 
+        const { data, error } = await supabase.auth.signUp({
+          email: newUser.email,
           password: pass,
           options: {
             data: {
@@ -126,16 +126,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (error) {
-             console.error("Erro no Registro Supabase:", error.message);
-             return false;
+          console.error("Erro no Registro Supabase:", error.message);
+          return false;
         }
 
         if (data.user) {
           const fullUser = { ...newUser, id: data.user.id } as User;
-          
+
           // Tenta salvar via cliente também como redundância
           await db.saveUser(fullUser);
-          
+
           setUser(fullUser);
           localStorage.setItem('iotu_session', JSON.stringify(fullUser));
           return true;
@@ -144,17 +144,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("Supabase register error:", e);
       }
     }
-    
+
     // Fallback offline
     if (!supabase) {
-        const id = 'off_' + Math.random().toString(36).substr(2, 9);
-        const fullUser = { ...newUser, id } as User;
-        await db.saveUser(fullUser);
-        setUser(fullUser);
-        localStorage.setItem('iotu_session', JSON.stringify(fullUser));
-        return true;
+      const id = 'off_' + Math.random().toString(36).substr(2, 9);
+      const fullUser = { ...newUser, id } as User;
+      await db.saveUser(fullUser);
+      setUser(fullUser);
+      localStorage.setItem('iotu_session', JSON.stringify(fullUser));
+      return true;
     }
-    
+
     return false;
   };
 
@@ -181,18 +181,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const currentFavorites = user.favorites || [];
     let newFavorites = currentFavorites.includes(workshopId)
-        ? currentFavorites.filter(id => id !== workshopId)
-        : [...currentFavorites, workshopId];
-    
+      ? currentFavorites.filter(id => id !== workshopId)
+      : [...currentFavorites, workshopId];
+
     await updateProfile({ ...user, favorites: newFavorites });
   };
 
   const logout = async () => {
     try {
       if (supabase) await supabase.auth.signOut();
-    } catch (e) {}
+    } catch (e) { }
     setUser(null);
     localStorage.removeItem('iotu_session');
+    localStorage.removeItem('mioto_active_tab');
+    localStorage.removeItem('mioto_selected_workshop_id');
   };
 
   return (

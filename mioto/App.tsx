@@ -17,21 +17,23 @@ import { db } from './services/db';
 
 const AppContent: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('mioto_active_tab') || 'home');
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
+  const [authConfig, setAuthConfig] = useState<{ view: 'login' | 'register', type: UserType }>({ view: 'login', type: 'motorista' });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [dbStatus, setDbStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [showSplash, setShowSplash] = useState(true);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [selectedWorkshopDetail, setSelectedWorkshopDetail] = useState<Workshop | null>(null);
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [sosStep, setSosStep] = useState<'menu' | 'searching'>('menu');
   // Callbacks simplificados para teste
-  const checkDbConnection = useCallback(async () => {
+  const checkDbConnection = useCallback(async (): Promise<{ status: 'online' | 'offline', message?: string }> => {
     setDbStatus('checking');
     try {
       const result = await db.checkConnection();
       setDbStatus(result.status);
-      return result; // Fixes lint error: Header expects a return value
+      return result;
     } catch (e) {
       console.error(e);
       return { status: 'offline', message: 'Erro ao verificar' };
@@ -41,6 +43,16 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     checkDbConnection();
 
+    // Restore selected workshop if persisted
+    const savedWorkshopId = localStorage.getItem('mioto_selected_workshop_id');
+    if (savedWorkshopId) {
+      db.getWorkshops().then(workshops => {
+        const found = workshops.find(w => w.id === savedWorkshopId);
+        if (found) setSelectedWorkshopDetail(found);
+        else localStorage.removeItem('mioto_selected_workshop_id');
+      });
+    }
+
     // Auto-dismiss Splash Screen
     const timer = setTimeout(() => {
       setShowSplash(false);
@@ -49,7 +61,34 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [checkDbConnection]);
 
-  const handleOpenAuth = useCallback(() => setShowAuthModal(true), []);
+  // Handle Tab Persistence
+  useEffect(() => {
+    localStorage.setItem('mioto_active_tab', activeTab);
+  }, [activeTab]);
+
+  // Handle Workshop Detail Persistence
+  useEffect(() => {
+    if (selectedWorkshopDetail) {
+      localStorage.setItem('mioto_selected_workshop_id', selectedWorkshopDetail.id);
+    } else {
+      localStorage.removeItem('mioto_selected_workshop_id');
+    }
+  }, [selectedWorkshopDetail]);
+
+  // Handle Reset on Logout (if user becomes null)
+  useEffect(() => {
+    if (!user && !isAuthLoading) {
+      setActiveTab('home');
+      setSelectedWorkshopDetail(null);
+      localStorage.removeItem('mioto_active_tab');
+      localStorage.removeItem('mioto_selected_workshop_id');
+    }
+  }, [user, isAuthLoading]);
+
+  const handleOpenAuth = useCallback((view: 'login' | 'register' = 'login', type: UserType = 'motorista') => {
+    setAuthConfig({ view, type });
+    setShowAuthModal(true);
+  }, []);
   const handleTabChange = useCallback((tabId: string) => setActiveTab(tabId), []);
 
   const handleOpenWorkshopDetails = useCallback((workshop: Workshop) => {
@@ -74,11 +113,27 @@ const AppContent: React.FC = () => {
   if (showSplash || isAuthLoading) {
     return (
       <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-4">
-        <div className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-primary/30 animate-bounce">
-          <Truck className="w-12 h-12 text-white" />
+        {/* 3 Barras Animadas do Splash */}
+        <div className="flex items-end gap-1.5 h-16 mb-8">
+          <style>
+            {`
+              @keyframes splash-bar-bounce {
+                0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+                50% { transform: scaleY(1.2); opacity: 1; }
+              }
+              .animate-splash-bar {
+                animation: splash-bar-bounce 1.5s ease-in-out infinite;
+                transform-origin: bottom;
+              }
+            `}
+          </style>
+          <div className="w-2.5 h-8 bg-primary rounded-full animate-splash-bar shadow-lg shadow-primary/20" style={{ animationDelay: '0s' }}></div>
+          <div className="w-2.5 h-14 bg-primary rounded-full animate-splash-bar shadow-lg shadow-primary/20" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-2.5 h-10 bg-primary rounded-full animate-splash-bar shadow-lg shadow-primary/20" style={{ animationDelay: '0.1s' }}></div>
         </div>
-        <h1 className="text-3xl font-brand font-bold text-gray-900 mb-2 tracking-tight">MIOTO</h1>
-        <p className="text-gray-500 font-medium animate-pulse">Carregando sistema...</p>
+
+        <h1 className="text-4xl font-brand font-bold text-gray-900 mb-2 tracking-tight">MIOTO</h1>
+        <p className="text-gray-400 font-medium text-sm animate-pulse">Carregando experiência...</p>
       </div>
     );
   }
@@ -95,7 +150,6 @@ const AppContent: React.FC = () => {
     }
 
     switch (activeTab) {
-      case 'ai-chat': return <AIChat onBack={() => setActiveTab('home')} />;
       case 'orders': return <Orders />;
       case 'profile': return <Profile />;
       case 'home':
@@ -107,7 +161,7 @@ const AppContent: React.FC = () => {
               <button onClick={() => setShowSOSModal(true)} className="col-span-3 bg-red-600 text-white rounded-xl p-4 flex items-center justify-center gap-2 shadow-lg shadow-red-200">
                 <Siren className="w-6 h-6" /> <span className="font-bold">SOS 24h</span>
               </button>
-              <button onClick={() => setActiveTab('ai-chat')} className="col-span-2 bg-gray-900 text-white rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
+              <button onClick={() => setIsAIChatOpen(true)} className="col-span-2 bg-gray-900 text-white rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
                 <Bot className="w-5 h-5 mb-1 text-primary" /> <span className="text-xs">Mecânico IA</span>
               </button>
             </div>
@@ -117,9 +171,7 @@ const AppContent: React.FC = () => {
               onNavigate={handleTabChange}
               onOpenDetails={handleOpenWorkshopDetails}
             />
-            {/* COMPONENTE COM BUG CRITICO - DESATIVADO PARA RESTAURAR O APP
-            <PartnerBanner onClick={() => handleOpenAuth()} />
-            */}
+            <PartnerBanner onClick={() => handleOpenAuth('register', 'oficina')} />
           </div>
         );
     }
@@ -136,12 +188,19 @@ const AppContent: React.FC = () => {
           onNavigate={handleTabChange}
           dbStatus={dbStatus}
           onRecheck={checkDbConnection}
+          onOpenAIChat={() => setIsAIChatOpen(true)}
           onOpenDetails={handleOpenWorkshopDetails}
         />
       )}
 
       {/* AUTH MODAL */}
-      {showAuthModal && !user && <AuthScreen onClose={() => setShowAuthModal(false)} initialView="login" initialType="motorista" />}
+      {showAuthModal && !user && (
+        <AuthScreen
+          onClose={() => setShowAuthModal(false)}
+          initialView={authConfig.view}
+          initialType={authConfig.type}
+        />
+      )}
 
       {/* SOS MODAL SIMPLIFICADO */}
       {showSOSModal && (
@@ -156,6 +215,25 @@ const AppContent: React.FC = () => {
       <main className="max-w-7xl mx-auto pt-20 px-4">
         {renderContent()}
       </main>
+
+      {/* FLOATING AI CHAT WIDGET */}
+      <div className="fixed bottom-20 md:bottom-6 left-4 z-[60] flex flex-col items-start gap-4 pointer-events-none">
+        {isAIChatOpen && (
+          <div className="pointer-events-auto animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <AIChat onBack={() => setIsAIChatOpen(false)} />
+          </div>
+        )}
+
+        {!isAIChatOpen && (
+          <button
+            onClick={() => setIsAIChatOpen(true)}
+            className="pointer-events-auto w-14 h-14 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-2xl border-2 border-primary/50 group transition-all hover:scale-110 active:scale-95 relative"
+          >
+            <Bot className="w-7 h-7 text-primary group-hover:rotate-12 transition-transform" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-gray-900"></div>
+          </button>
+        )}
+      </div>
 
       {/* BOTTOM NAV */}
       {!selectedWorkshopDetail && (

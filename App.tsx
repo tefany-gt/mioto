@@ -17,7 +17,7 @@ import { db } from './services/db';
 
 const AppContent: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('mioto_active_tab') || 'home');
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
   const [authConfig, setAuthConfig] = useState<{ view: 'login' | 'register', type: UserType }>({ view: 'login', type: 'motorista' });
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -43,6 +43,16 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     checkDbConnection();
 
+    // Restore selected workshop if persisted
+    const savedWorkshopId = localStorage.getItem('mioto_selected_workshop_id');
+    if (savedWorkshopId) {
+      db.getWorkshops().then(workshops => {
+        const found = workshops.find(w => w.id === savedWorkshopId);
+        if (found) setSelectedWorkshopDetail(found);
+        else localStorage.removeItem('mioto_selected_workshop_id');
+      });
+    }
+
     // Auto-dismiss Splash Screen
     const timer = setTimeout(() => {
       setShowSplash(false);
@@ -50,6 +60,30 @@ const AppContent: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [checkDbConnection]);
+
+  // Handle Tab Persistence
+  useEffect(() => {
+    localStorage.setItem('mioto_active_tab', activeTab);
+  }, [activeTab]);
+
+  // Handle Workshop Detail Persistence
+  useEffect(() => {
+    if (selectedWorkshopDetail) {
+      localStorage.setItem('mioto_selected_workshop_id', selectedWorkshopDetail.id);
+    } else {
+      localStorage.removeItem('mioto_selected_workshop_id');
+    }
+  }, [selectedWorkshopDetail]);
+
+  // Handle Reset on Logout (if user becomes null)
+  useEffect(() => {
+    if (!user && !isAuthLoading) {
+      setActiveTab('home');
+      setSelectedWorkshopDetail(null);
+      localStorage.removeItem('mioto_active_tab');
+      localStorage.removeItem('mioto_selected_workshop_id');
+    }
+  }, [user, isAuthLoading]);
 
   const handleOpenAuth = useCallback((view: 'login' | 'register' = 'login', type: UserType = 'motorista') => {
     setAuthConfig({ view, type });
