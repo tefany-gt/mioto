@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, X, Wrench, Search, LogOut, LogIn, ShoppingBag, Zap, Database, Globe, WifiOff, Heart, ChevronRight, Star, Bot } from 'lucide-react';
+import { Menu, Bell, X, Wrench, Search, LogOut, LogIn, ShoppingBag, Zap, Database, Globe, WifiOff, ChevronRight, Star, Bot } from 'lucide-react';
 import { User, UserType, Notification, Workshop } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/db';
@@ -18,13 +18,10 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus, onRecheck, onOpenAIChat, onOpenDetails }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [isFavOpen, setIsFavOpen] = useState(false);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [favoriteWorkshops, setFavoriteWorkshops] = useState<Workshop[]>([]);
 
   const notifRef = useRef<HTMLDivElement>(null);
-  const favRef = useRef<HTMLDivElement>(null);
 
   const { logout, toggleFavorite } = useAuth();
 
@@ -32,9 +29,6 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
     function handleClickOutside(event: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setIsNotifOpen(false);
-      }
-      if (favRef.current && !favRef.current.contains(event.target as Node)) {
-        setIsFavOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -44,7 +38,6 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
   useEffect(() => {
     if (!user) {
       setNotifications([]);
-      setFavoriteWorkshops([]);
       return;
     }
 
@@ -96,18 +89,6 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
       } catch (e) { }
 
       setNotifications(generated);
-
-      if (user.favorites && user.favorites.length > 0) {
-        try {
-          const allWorkshops = await db.getWorkshops();
-          const favs = allWorkshops.filter(w => user.favorites?.includes(w.id));
-          setFavoriteWorkshops(favs);
-        } catch (e) {
-          console.error("Erro ao carregar favoritos", e);
-        }
-      } else {
-        setFavoriteWorkshops([]);
-      }
     };
 
     loadData();
@@ -116,14 +97,12 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
   }, [user, user?.favorites]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  const toggleNotif = () => { setIsNotifOpen(!isNotifOpen); setIsFavOpen(false); };
-  const toggleFav = () => { setIsFavOpen(!isFavOpen); setIsNotifOpen(false); };
+  const toggleNotif = () => { setIsNotifOpen(!isNotifOpen); };
 
   const handleNavClick = (tabId: string, filter?: string) => {
     onNavigate(tabId, filter);
     setIsMenuOpen(false);
     setIsNotifOpen(false);
-    setIsFavOpen(false);
   };
 
   const handleLogout = () => {
@@ -142,12 +121,6 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
     }
   };
 
-  const handleFavoriteClick = (shop: Workshop) => {
-    if (onOpenDetails) {
-      onOpenDetails(shop);
-      setIsFavOpen(false);
-    }
-  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -214,60 +187,6 @@ const Header: React.FC<HeaderProps> = ({ user, onOpenAuth, onNavigate, dbStatus,
 
             {user ? (
               <>
-                <div className="relative" ref={favRef}>
-                  <button onClick={toggleFav} className="p-2 rounded-full text-white hover:bg-white/20 transition-colors relative">
-                    <Heart className={`w-6 h-6 ${isFavOpen || (user.favorites && user.favorites.length > 0) ? 'fill-white' : ''}`} />
-                  </button>
-
-                  {isFavOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 text-gray-800">
-                      <div className="p-4 border-b bg-gray-50/50">
-                        <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                          <Heart className="w-4 h-4 text-primary fill-primary" /> Favoritos
-                        </h4>
-                      </div>
-                      <div className="max-h-[300px] overflow-y-auto p-2">
-                        {favoriteWorkshops.length === 0 ? (
-                          <div className="py-8 text-center">
-                            <Heart className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                            <p className="text-xs text-gray-400">Você ainda não tem favoritos.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {favoriteWorkshops.map(shop => (
-                              <button
-                                key={shop.id}
-                                onClick={() => handleFavoriteClick(shop)}
-                                className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100 text-left group"
-                              >
-                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
-                                  <img src={shop.image || `https://ui-avatars.com/api/?name=${shop.name}`} alt={shop.name} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h5 className="text-xs font-bold text-gray-900 truncate group-hover:text-primary transition-colors">{shop.name}</h5>
-                                  <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                    {shop.rating?.toFixed(1)}
-                                  </div>
-                                </div>
-                                <div
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleFavorite(shop.id);
-                                  }}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Remover"
-                                >
-                                  <X className="w-4 h-4" />
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 <div className="relative" ref={notifRef}>
                   <button onClick={toggleNotif} className="p-2 rounded-full text-white hover:bg-white/20 transition-colors relative">
